@@ -1,0 +1,40 @@
+name: Package release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  package:
+    name: Attach Wisp.zip
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Package files into a Wisp folder
+        run: |
+          mkdir -p build/Wisp
+          rsync -a \
+            --exclude=".git" \
+            --exclude=".github" \
+            --exclude="build" \
+            --exclude=".DS_Store" \
+            ./ build/Wisp/
+          (
+            cd build
+            zip -r Wisp.zip Wisp
+          )
+          unzip -l build/Wisp.zip
+
+      - name: Upload zip to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/Wisp.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
